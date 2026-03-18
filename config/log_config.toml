@@ -1,0 +1,43 @@
+[global]
+# 并发数
+workers = 4
+# 批量处理数
+batch_size = 1000
+
+[input]
+type = "file"
+path = "/var/log/input/access.log"
+
+[parser]
+type = "regex"
+# 正则表达式
+# custom_regex = '^(?P<ip>[\d.]+)...'
+[[transformers]]
+type = "filter"
+field = "status"
+operator = "not in"
+values = [404, 500]
+
+[[transformers]]
+type = "enrich"
+field = "hour"
+source_field = "timestamp"
+format = "%H"
+
+[sink]
+type = "file"
+path = "/var/log/output/processed.log"
+format = "json"
+# rotate_size = "100MB"
+# rotate_time = "1h"
+# 如果 format = "delimited"，需要额外配置
+# delimiter = "|"
+# fields = ["timestamp", "ip", "status", "url"]
+
+# 阶段2：Kafka 输出示例
+# [sink]
+# type = "kafka"
+# brokers = ["localhost:9092"]
+# topic = "logs"
+# batch_size = 1000
+

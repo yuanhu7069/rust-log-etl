@@ -1,0 +1,1 @@
+{"auth_user":"-","bytes":"612","ip":"127.0.0.1","method":"GET","protocol":"HTTP/1.1","raw":"127.0.0.1 - - [16/Mar/2024:10:30:00 +0800] \"GET /index.html HTTP/1.1\" 200 612 \"-\" \"Mozilla/5.0\"","referer":"-","status":"200","timestamp":"2024-03-16T02:30:00+00:00","url":"/index.html","user_agent":"Mozilla/5.0"}

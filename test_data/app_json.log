@@ -1,0 +1,3 @@
+{"timestamp":"2026-03-10 14:30:05","level":"INFO","service":"user-service","trace_id":"abc123456","user_id":890,"message":"user login success","ip":"192.168.1.2","latency_ms":45}
+{"timestamp":"2026-03-10 14:30:10","level":"ERROR","service":"order-service","trace_id":"def789012","user_id":890,"message":"create order failed: inventory insufficient","ip":"192.168.1.2","latency_ms":120,"error_code":"ORDER_001"}
+{"timestamp":"2026-03-10 14:30:15","level":"WARN","service":"payment-service","trace_id":"ghi345678","user_id":789,"message":"payment timeout","ip":"10.0.0.6","latency_ms":3000}
