@@ -9,6 +9,7 @@ pub mod core;
 pub mod sink;
 
 pub mod transformers;
+pub mod cli;
 
 pub use config::Config;
 pub use config::ParserConfig;
@@ -24,3 +25,4 @@ pub use transformers::FilterTransformer;
 pub use transformers::EnrichTransformer;
 pub use sink::OutputFormat;
 pub use sink::FileSink;
+

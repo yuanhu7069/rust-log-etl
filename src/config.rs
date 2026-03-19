@@ -31,7 +31,7 @@ pub enum InputConfig {
     File {
         path: PathBuf,
         #[serde(default)]
-        checkpoink_file: Option<PathBuf>
+        checkpoint_file: Option<PathBuf>
     },
 }
 
@@ -57,20 +57,19 @@ pub enum ParserConfig {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(tag = "type")]
+#[derive(Debug, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum TransformerConfig {
-    #[serde(rename = "filter")]
     Filter {
         field: String,
         operator: FilterOperator,
-        value: FilterValue
+        value: toml::Value,
     },
 
-    #[serde(rename = "enrich")]
     Enrich {
         field: String,
         source_field: String,
+        #[serde(flatten)]
         enrich_type: EnrichType
     }
 }
@@ -93,8 +92,27 @@ pub enum FilterOperator {
 pub enum FilterValue {
     Single(String),
     List(Vec<String>),
-    Number(f64),
+    Number(f64)
 }
+
+// #[derive(Debug, Deserialize, Clone)]
+// #[serde(untagged)]
+// pub enum FilterValueConfig {
+//     Single{ value: String },
+//     List{ values: Vec<String> },
+//     Number{ value: f64},
+// }
+//
+//
+// impl FilterValueConfig {
+//     pub fn to_filter_value(&self) -> FilterValue{
+//         match self {
+//             FilterValueConfig::Single {value} => FilterValue::Single(value.clone()),
+//             FilterValueConfig::List { values} => FilterValue::List(values.clone()),
+//             FilterValueConfig::Number { value} => FilterValue::Number(*value),
+//         }
+//     }
+// }
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(tag = "type")]
@@ -187,6 +205,26 @@ impl Config {
         }
 
         Ok(())
+    }
+}
+
+/// 辅助函数：解析 toml:: Value 到 FilterValue
+pub fn parse_filter_value(value: &toml::Value) -> Result<FilterValue> {
+    match value {
+        toml::Value::String(s) => Ok(FilterValue::Single(s.clone())),
+        toml::Value::Integer(n) => Ok(FilterValue::Number(*n as f64)),
+        toml::Value::Float(n) => Ok(FilterValue::Number(*n)),
+        toml::Value::Array(arry) => {
+            let list: Vec<String> = arry.iter()
+                .map(|v| match v {
+                    toml::Value::String(s) => Ok(s.clone()),
+                    toml::Value::Integer(n) => Ok(n.to_string()),
+                    toml::Value::Float(n) => Ok(n.to_string()),
+                    _ => anyhow::bail!("列表元素必须是字符串或者数字：{:?}", v)
+                }).collect::<Result<Vec<_>, _>>()?;
+            Ok(FilterValue::List(list))
+        }
+        _ => anyhow::bail!("不支持的 value 类型： {:?}", value),
     }
 }
 

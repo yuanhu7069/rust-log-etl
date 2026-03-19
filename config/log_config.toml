@@ -41,3 +41,30 @@ format = "json"
 # topic = "logs"
 # batch_size = 1000
 
+## 等于
+#[[transformers]]
+#type = "filter"
+#field = "status"
+#operator = "eq"
+#value = "200"
+#
+## 数字比较
+#[[transformers]]
+#type = "filter"
+#field = "bytes"
+#operator = "gt"
+#value = 1000
+#
+## 不在列表中（数组）
+#[[transformers]]
+#type = "filter"
+#field = "status"
+#operator = "not_in"
+#value = ["404", "500", "502", "503"]
+#
+## 正则匹配
+#[[transformers]]
+#type = "filter"
+#field = "url"
+#operator = "regex"
+#value = "^/api/.*$"
