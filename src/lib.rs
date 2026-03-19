@@ -10,6 +10,8 @@ pub mod sink;
 
 pub mod transformers;
 pub mod cli;
+pub mod error;
+pub mod dlq;
 
 pub use config::Config;
 pub use config::ParserConfig;

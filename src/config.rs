@@ -159,6 +159,16 @@ fn default_format() -> String {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct DlqConfig{
+    pub path: PathBuf,
+    #[serde(default = "default_buffer_size")]
+    pub buffer_size: usize,
+}
+fn default_buffer_size() -> usize {
+    1000
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub global: GlobalConfig,
     pub input: InputConfig,
@@ -166,7 +176,10 @@ pub struct Config {
     #[serde(default)]
     pub transformers: Vec<TransformerConfig>,
     pub sink: SinkConfig,
+    pub dlq: Option<DlqConfig>,
 }
+
+
 
 
 impl Config {

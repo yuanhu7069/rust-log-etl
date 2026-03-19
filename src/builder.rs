@@ -4,17 +4,20 @@
 //! @created 2026/3/17 17:04
 //! @version 1.0.0
 
+use std::path::PathBuf;
 use anyhow::{Context, Result};
+use tokio::sync::mpsc;
 use crate::{Config, ParserConfig, Pipeline, NginxParser, Parser, TransformerConfig, Transformer, SinkConfig, JsonParser, FilterTransformer, EnrichTransformer, OutputFormat, FileSink};
 use crate::cli::RuntimeConfig;
-use crate::config::{parse_filter_value, InputConfig};
+use crate::config::{parse_filter_value, DlqConfig, InputConfig};
 use crate::core::{Sink};
+use crate::dlq::DeadLetterQueue;
 
 pub struct PipelineBuilder ;
 
 impl PipelineBuilder {
 
-    pub async fn build_from_runtime(config: &RuntimeConfig) -> Result<Pipeline> {
+    pub async fn build_from_runtime(config: &RuntimeConfig,  dlq_path: Option<PathBuf>) -> Result<(Pipeline, Option<DeadLetterQueue>)> {
         let parser: Box<dyn Parser> = match config.parser_type.as_str() {
            "nginx" => Box::new(NginxParser::new()),
             "json" => Box::new(JsonParser::new()),
@@ -28,18 +31,29 @@ impl PipelineBuilder {
             _ => panic!("不支持的输出格式"),
         };
 
-        // let transformers = Self::build_transformers(&config.transformers);
+        // let transformers = TransformerChain::new(vec![]);
         let sink = Box::new(FileSink::new(config.output_path.clone(), output_format).await?);
 
-        Ok(Pipeline::new(parser, vec![], sink))
+        // 创建死信队列（如果指定了路径）
+        let dlq_config = dlq_path.map(|p| DlqConfig {
+            path: p,
+            buffer_size: 10000,
+        });
+        let (dlq_sender, dlq) = Self::build_dlq(dlq_config.as_ref()).await?;
+
+        let pipeline = Pipeline::new(parser, vec![], sink, dlq_sender);
+        Ok((pipeline, dlq))
     }
 
-    pub async fn build(config: &Config) -> Result<Pipeline>{
+    pub async fn build(config: &Config) -> Result<(Pipeline, Option<DeadLetterQueue>)>{
         let parser = Self::build_parse(&config.parser)?;
         let transformers = Self::build_transformers(&config.transformers)?;
         let sink = Self::build_sink(&config.sink).await?;
-
-        Ok(Pipeline::new(parser, transformers, sink))
+        
+        let (dlq_sender, dlq) = Self::build_dlq(config.dlq.as_ref()).await?;
+        let pipeline = Pipeline::new(parser, transformers, sink, dlq_sender);
+        
+        Ok((pipeline, dlq))
     }
 
     fn build_parse(config : &ParserConfig) -> Result<Box<dyn Parser>> {
@@ -114,7 +128,17 @@ impl PipelineBuilder {
             }
         }
     }
-
+    
+    /// 构建死信队列
+    async fn build_dlq(config: Option<&DlqConfig>,) -> Result<(Option<mpsc::Sender< String>>, Option<DeadLetterQueue>)> {
+        match config { 
+            Some(dlq_config) => {
+                let (dlq, sender) = DeadLetterQueue::new(dlq_config.path.clone(), dlq_config.buffer_size);
+                Ok((Some(sender), Some(dlq)))
+            }
+            None => Ok((None, None))
+        }
+    }
 
 }
 
